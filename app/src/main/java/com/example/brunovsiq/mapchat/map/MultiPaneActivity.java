@@ -36,6 +36,8 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class MultiPaneActivity extends AppCompatActivity {
 
@@ -99,7 +101,18 @@ public class MultiPaneActivity extends AppCompatActivity {
 
         getPartnersList();
 
+        Timer timer = new Timer();
+        timer.scheduleAtFixedRate(timerTask, 0, 10000);
+
     }
+
+    private TimerTask timerTask = new TimerTask() {
+
+        @Override
+        public void run() {
+            getPartnersList();
+        }
+    };
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
@@ -170,7 +183,7 @@ public class MultiPaneActivity extends AppCompatActivity {
                         }
 
                         Collections.sort(partnerList);
-
+                        usernameList.clear();
                         for (int i=0; i < partnerList.size(); i++) {
                             usernameList.add(partnerList.get(i).getUsername());
                         }
