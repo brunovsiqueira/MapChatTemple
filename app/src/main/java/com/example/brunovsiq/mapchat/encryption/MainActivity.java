@@ -4,7 +4,9 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.os.Build;
 import android.os.IBinder;
+import android.support.annotation.RequiresApi;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Base64;
@@ -184,6 +186,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     View.OnClickListener keyPairClickListener = new View.OnClickListener() {
+        @RequiresApi(api = Build.VERSION_CODES.M)
         @Override
         public void onClick(View v) {
 
