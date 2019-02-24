@@ -13,7 +13,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".map.MultiPaneActivity">
+        <activity android:name=".encryption.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -26,7 +26,7 @@
             android:enabled="true"
             android:exported="true" />
 
-        <activity android:name=".encryption.MainActivity"></activity>
+        <activity android:name=".map.MultiPaneActivity"></activity>
     </application>
 
 </manifest>

@@ -63,7 +63,7 @@ public class MainActivity extends AppCompatActivity {
 
 
         try {
-            cipher = Cipher.getInstance("RSA");
+            cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
         }
@@ -85,7 +85,7 @@ public class MainActivity extends AppCompatActivity {
 
             byte[] encrypted = null;
             try {
-                cipher.init(Cipher.ENCRYPT_MODE, userKeyPair.getPrivate());
+                cipher.init(Cipher.ENCRYPT_MODE, userKeyPair.getPublic());
                 encrypted = cipher.doFinal(text.getBytes());
             } catch (Exception e) {
                 e.printStackTrace();
@@ -103,7 +103,7 @@ public class MainActivity extends AppCompatActivity {
 
         byte[] encryptedText = Base64.decode(text, Base64.DEFAULT);
         try {
-            cipher.init(Cipher.DECRYPT_MODE, userKeyPair.getPublic());
+            cipher.init(Cipher.DECRYPT_MODE, userKeyPair.getPrivate());
             s = new String(cipher.doFinal(encryptedText));
         } catch (Exception e) {
             e.printStackTrace();
