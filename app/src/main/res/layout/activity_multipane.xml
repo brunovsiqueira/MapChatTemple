@@ -6,27 +6,59 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:baselineAligned="false"
-    android:orientation="horizontal"
+    android:orientation="vertical"
     android:animateLayoutChanges="true"
     tools:context=".map.MultiPaneActivity">
 
-    <fragment
-        android:id="@+id/user_list_fragment"
-        android:layout_width="0dp"
-        android:layout_weight="1"
-        android:layout_height="match_parent"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentTop="true"
-        class="com.example.brunovsiq.mapchat.map.UserListFragment" />
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
 
-    <fragment
-        android:id="@+id/map_fragment"
-        android:layout_width="0dp"
-        android:layout_weight="2"
+        <EditText
+            android:id="@+id/username_edit"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:hint="Type an username"
+            android:layout_marginLeft="16dp"/>
+
+        <Button
+            android:id="@+id/save_button"
+            android:layout_width="80dp"
+            android:layout_height="40dp"
+            android:layout_marginLeft="32dp"
+            android:text="save"
+            android:textAllCaps="true"/>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentTop="true"
-        class="com.example.brunovsiq.mapchat.map.MapFragment" />
+        android:orientation="horizontal">
+
+        <fragment
+            android:id="@+id/user_list_fragment"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentTop="true"
+            class="com.example.brunovsiq.mapchat.map.UserListFragment" />
+
+        <fragment
+            android:id="@+id/map_fragment"
+            android:name="com.google.android.gms.maps.SupportMapFragment"
+            android:layout_width="0dp"
+            android:layout_weight="2"
+            android:layout_height="match_parent"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentTop="true"
+            />
+
+
+    </LinearLayout>
+
 
 
 

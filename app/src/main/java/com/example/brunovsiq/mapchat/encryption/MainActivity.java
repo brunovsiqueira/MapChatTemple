@@ -4,6 +4,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+<<<<<<< HEAD
 import android.nfc.NdefMessage;
 import android.nfc.NdefRecord;
 import android.nfc.NfcAdapter;
@@ -11,6 +12,10 @@ import android.nfc.NfcEvent;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.Parcelable;
+=======
+import android.os.Build;
+import android.os.IBinder;
+>>>>>>> 19f0b922b5ab2a25494f59c9aec545beb40d99b5
 import android.support.annotation.RequiresApi;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
