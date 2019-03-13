@@ -17,12 +17,8 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-<<<<<<< HEAD
         <activity android:name=".encryption.MainActivity"
             android:launchMode="singleTask">
-=======
-        <activity android:name=".encryption.MainActivity">
->>>>>>> 19f0b922b5ab2a25494f59c9aec545beb40d99b5
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -41,13 +37,10 @@
             android:exported="true" />
 
         <activity android:name=".map.MultiPaneActivity"></activity>
-<<<<<<< HEAD
-=======
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyD4VUURmulZaOY_BQdJuOPbuu6dlsv47wQ"/>
->>>>>>> 19f0b922b5ab2a25494f59c9aec545beb40d99b5
     </application>
 
 </manifest>
