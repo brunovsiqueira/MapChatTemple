@@ -33,8 +33,8 @@ import java.util.Base64;
 
 public class KeyService extends Service {
 
-//    KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
-    KeyPairGenerator kpg;
+    KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
+//    KeyPairGenerator kpg;
     private boolean generated = false;
     KeyPair keyPair;
     private final IBinder mBinder = new KeyBinder();

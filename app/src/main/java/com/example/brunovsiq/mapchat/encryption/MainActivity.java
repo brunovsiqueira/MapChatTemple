@@ -4,10 +4,18 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.nfc.NdefMessage;
+import android.nfc.NdefRecord;
+import android.nfc.NfcAdapter;
+import android.nfc.NfcEvent;
+import android.os.Build;
 import android.os.IBinder;
+import android.os.Parcelable;
+import android.support.annotation.RequiresApi;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Base64;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -24,7 +32,9 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
-public class MainActivity extends AppCompatActivity {
+import static android.nfc.NdefRecord.createMime;
+
+public class MainActivity extends AppCompatActivity implements NfcAdapter.CreateNdefMessageCallback {
 
     /*
     Bruno Viana de Siqueira
@@ -36,9 +46,11 @@ public class MainActivity extends AppCompatActivity {
     private Button encryptButton;
     private Button decryptButton;
     private TextView outputText;
+
     private KeyService keyService;
     private boolean isBound;
     private KeyPair userKeyPair;
+    private NfcAdapter nfcAdapter;
 
     private IvParameterSpec ivSpec;
     private SecretKeySpec keySpec;
@@ -50,6 +62,18 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         doBindService();
+
+        // Check for available NFC Adapter
+        nfcAdapter = NfcAdapter.getDefaultAdapter(this);
+        if (nfcAdapter == null) {
+            Toast.makeText(this, "NFC is not available", Toast.LENGTH_LONG).show();
+            //finish();
+            //return;
+        } else {
+            // Register callback
+            nfcAdapter.setNdefPushMessageCallback(this, this);
+        }
+
 
         keyPairButton = findViewById(R.id.button_request_keypair);
         encryptButton = findViewById(R.id.encryption_button);
@@ -70,6 +94,47 @@ public class MainActivity extends AppCompatActivity {
         catch (NoSuchPaddingException e) {
             e.printStackTrace();
         }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Check to see that the Activity started due to an Android Beam
+        if (NfcAdapter.ACTION_NDEF_DISCOVERED.equals(getIntent().getAction())) {
+            processIntent(getIntent());
+        }
+    }
+
+    @Override
+    public NdefMessage createNdefMessage(NfcEvent event) {
+        String text = ("Beam me up, Android!\n\n" +
+                "Beam Time: " + System.currentTimeMillis());
+        NdefMessage msg = new NdefMessage(
+                new NdefRecord[] { createMime("application/vnd.com.example.android.beam", text.getBytes())
+                        /**
+                         * The Android Application Record (AAR) is commented out. When a device
+                         * receives a push with an AAR in it, the application specified in the AAR
+                         * is guaranteed to run. The AAR overrides the tag dispatch system.
+                         * You can add it back in to guarantee that this
+                         * activity starts when receiving a beamed message. For now, this code
+                         * uses the tag dispatch system.
+                        */
+                        //,NdefRecord.createApplicationRecord("com.example.android.beam")
+                });
+        NdefMessage msg2 = new NdefMessage(
+                new NdefRecord[] { createMime("application/vnd.com.example.android.beam", userKeyPair.getPrivate().getEncoded())
+
+                });
+        return msg;
+    }
+
+    void processIntent(Intent intent) {
+        Parcelable[] rawMsgs = intent.getParcelableArrayExtra(
+                NfcAdapter.EXTRA_NDEF_MESSAGES);
+        // only one message sent during the beam
+        NdefMessage msg = (NdefMessage) rawMsgs[0];
+        // record 0 contains the MIME type, record 1 is the AAR, if present
+        Log.d("NFC PAYLOAD",new String(msg.getRecords()[0].getPayload()));
     }
 
     @Override
@@ -184,6 +249,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     View.OnClickListener keyPairClickListener = new View.OnClickListener() {
+        @RequiresApi(api = Build.VERSION_CODES.M)
         @Override
         public void onClick(View v) {
 
@@ -224,5 +290,4 @@ public class MainActivity extends AppCompatActivity {
 
         }
     };
-
 }
