@@ -10,7 +10,7 @@ public class Partner implements Comparable<Partner>{
     private String username;
     private double latitude;
     private double longitude;
-    private double distanceToUser;
+    private double  distanceToUser;
 
     public Partner(JSONObject jsonObject) throws JSONException {
         this.username = jsonObject.getString("username");

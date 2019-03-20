@@ -145,9 +145,20 @@ public class KeyService extends Service {
         return  keyPair;
     }
 
-    private void storePublicKey (String partnerName, PublicKey publicKey) throws KeyStoreException {
+    public void storePublicKey (String partnerName, String publicKeyString) throws KeyStoreException {
         /* Store a key for a provided partner name */
-        keyStore.setKeyEntry(partnerName, publicKey, null, null);
+        try{
+            byte[] byteKey = android.util.Base64.decode(publicKeyString, android.util.Base64.DEFAULT);
+            X509EncodedKeySpec X509publicKey = new X509EncodedKeySpec(byteKey);
+            KeyFactory kf = KeyFactory.getInstance("RSA");
+
+            PublicKey publicKey = kf.generatePublic(X509publicKey);
+            keyStore.setKeyEntry(partnerName, publicKey, null, null);
+        }
+        catch(Exception e){
+            e.printStackTrace();
+        }
+
     }
 
     @RequiresApi(api = Build.VERSION_CODES.M)
@@ -177,7 +188,7 @@ public class KeyService extends Service {
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
-    private RSAPublicKey getPublicKey(String partnerName) throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException {
+    public RSAPublicKey getPublicKey(String partnerName) throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException {
     /*
      Returns the public key associated with the
      provided partner name

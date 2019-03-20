@@ -23,9 +23,17 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.brunovsiq.mapchat.R;
+import com.example.brunovsiq.mapchat.models.User;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.security.KeyFactory;
 import java.security.KeyPair;
+import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
 
 import javax.crypto.Cipher;
 import javax.crypto.NoSuchPaddingException;
@@ -46,6 +54,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Create
     private Button encryptButton;
     private Button decryptButton;
     private TextView outputText;
+    private String username = "DEFAULT";
 
     private KeyService keyService;
     private boolean isBound;
@@ -62,6 +71,9 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Create
         setContentView(R.layout.activity_main);
 
         doBindService();
+        if (User.getInstance().getUsername() != null) {
+            username = User.getInstance().getUsername();
+        }
 
         // Check for available NFC Adapter
         nfcAdapter = NfcAdapter.getDefaultAdapter(this);
@@ -105,36 +117,93 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Create
         }
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     @Override
     public NdefMessage createNdefMessage(NfcEvent event) {
-        String text = ("Beam me up, Android!\n\n" +
-                "Beam Time: " + System.currentTimeMillis());
-        NdefMessage msg = new NdefMessage(
-                new NdefRecord[] { createMime("application/vnd.com.example.android.beam", text.getBytes())
-                        /**
-                         * The Android Application Record (AAR) is commented out. When a device
-                         * receives a push with an AAR in it, the application specified in the AAR
-                         * is guaranteed to run. The AAR overrides the tag dispatch system.
-                         * You can add it back in to guarantee that this
-                         * activity starts when receiving a beamed message. For now, this code
-                         * uses the tag dispatch system.
-                        */
-                        //,NdefRecord.createApplicationRecord("com.example.android.beam")
-                });
-        NdefMessage msg2 = new NdefMessage(
-                new NdefRecord[] { createMime("application/vnd.com.example.android.beam", userKeyPair.getPrivate().getEncoded())
+//        String text = ("Beam me up, Android!\n\n" +
+//                "Beam Time: " + System.currentTimeMillis());
+//        NdefMessage msg = new NdefMessage(
+//                new NdefRecord[] { createMime("application/vnd.com.example.android.beam", text.getBytes())
+//                        /**
+//                         * The Android Application Record (AAR) is commented out. When a device
+//                         * receives a push with an AAR in it, the application specified in the AAR
+//                         * is guaranteed to run. The AAR overrides the tag dispatch system.
+//                         * You can add it back in to guarantee that this
+//                         * activity starts when receiving a beamed message. For now, this code
+//                         * uses the tag dispatch system.
+//                        */
+//                        //,NdefRecord.createApplicationRecord("com.example.android.beam")
+//                });
+//        NdefMessage msg2 = new NdefMessage(
+//                new NdefRecord[] { createMime("application/vnd.com.example.android.beam", userKeyPair.getPrivate().getEncoded())
+//
+//                });
+//        return msg;
+
+        X509EncodedKeySpec spec = null;
+        String keyString = null;
+        try {
+            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+            spec = keyFactory.getKeySpec(userKeyPair.getPublic(), X509EncodedKeySpec.class);
+            keyString = Base64.encodeToString(spec.getEncoded(), Base64.DEFAULT);
+
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (InvalidKeySpecException e) {
+            e.printStackTrace();
+        }
+
+        keyString = String.format("-----BEGIN PUBLIC KEY-----%s-----END PUBLIC KEY-----", keyString);
+
+
+        JSONObject keyJsonObject = new JSONObject();
+        try {
+            keyJsonObject.put("user", username);
+            keyJsonObject.put("key", keyString);
+        } catch (JSONException e) {
+
+            e.printStackTrace();
+        }
+
+        String PEMRecord = keyJsonObject.toString();
+//        NdefMessage n = new NdefMessage(new NdefRecord[] { NdefRecord.createTextRecord(null,PEMRecord), NdefRecord.createApplicationRecord(getPackageName())});
+        NdefMessage n = new NdefMessage(
+                new NdefRecord[] { createMime("application/vnd.com.example.android.beam", PEMRecord.getBytes())
 
                 });
-        return msg;
+
+        return n;
+    }
+
+    @Override
+    public void onNewIntent(Intent intent) {
+        // onResume gets called after this to handle the intent
+        setIntent(intent);
     }
 
     void processIntent(Intent intent) {
-        Parcelable[] rawMsgs = intent.getParcelableArrayExtra(
-                NfcAdapter.EXTRA_NDEF_MESSAGES);
-        // only one message sent during the beam
-        NdefMessage msg = (NdefMessage) rawMsgs[0];
-        // record 0 contains the MIME type, record 1 is the AAR, if present
-        Log.d("NFC PAYLOAD",new String(msg.getRecords()[0].getPayload()));
+//        Parcelable[] rawMsgs = intent.getParcelableArrayExtra(
+//                NfcAdapter.EXTRA_NDEF_MESSAGES);
+//        // only one message sent during the beam
+//        NdefMessage msg = (NdefMessage) rawMsgs[0];
+//        // record 0 contains the MIME type, record 1 is the AAR, if present
+//        Log.d("NFC PAYLOAD",new String(msg.getRecords()[0].getPayload()));
+        String userdata = new String(((NdefMessage)intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES)[0])
+                .getRecords()[0]
+                .getPayload());
+        JSONObject jsonObject = null;
+        try {
+            jsonObject = new JSONObject(userdata);
+            String partnerKey = jsonObject.getString("key");
+            partnerKey = partnerKey.replace("-----BEGIN PUBLIC KEY-----", "");
+            partnerKey = partnerKey.replace("\n-----END PUBLIC KEY-----", "");
+            keyService.storePublicKey(jsonObject.getString("user"), partnerKey);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        }
+
     }
 
     @Override
