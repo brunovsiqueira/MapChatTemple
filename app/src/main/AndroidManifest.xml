@@ -19,6 +19,26 @@
         android:theme="@style/AppTheme">
         <activity android:name=".encryption.MainActivity"
             android:launchMode="singleTask">
+            <!--<intent-filter>-->
+                <!--<action android:name="android.intent.action.MAIN" />-->
+
+                <!--<category android:name="android.intent.category.LAUNCHER" />-->
+            <!--</intent-filter>-->
+            <!--<intent-filter>-->
+                <!--<action android:name="android.nfc.action.NDEF_DISCOVERED"/>-->
+                <!--<category android:name="android.intent.category.DEFAULT"/>-->
+                <!--<data android:mimeType="application/vnd.com.example.android.beam"/>-->
+            <!--</intent-filter>-->
+        </activity>
+
+        <service
+            android:name=".encryption.KeyService"
+            android:enabled="true"
+            android:exported="true" />
+
+        <activity android:name=".map.MultiPaneActivity"
+            android:launchMode="singleTask">
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -29,14 +49,8 @@
                 <category android:name="android.intent.category.DEFAULT"/>
                 <data android:mimeType="application/vnd.com.example.android.beam"/>
             </intent-filter>
+
         </activity>
-
-        <service
-            android:name=".encryption.KeyService"
-            android:enabled="true"
-            android:exported="true" />
-
-        <activity android:name=".map.MultiPaneActivity"></activity>
 
         <service android:name=".services.MyFirebaseMessagingService">
             <intent-filter>
@@ -47,6 +61,10 @@
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyD4VUURmulZaOY_BQdJuOPbuu6dlsv47wQ"/>
+
+        <uses-library
+            android:name="org.apache.http.legacy"
+            android:required="false" />
     </application>
 
 </manifest>

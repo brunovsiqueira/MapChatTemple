@@ -2,23 +2,35 @@ package com.example.brunovsiq.mapchat.map;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.nfc.NdefMessage;
+import android.nfc.NdefRecord;
+import android.nfc.NfcAdapter;
+import android.nfc.NfcEvent;
 import android.os.Build;
+import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Base64;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -30,6 +42,7 @@ import com.androidnetworking.error.ANError;
 import com.androidnetworking.interfaces.JSONArrayRequestListener;
 import com.androidnetworking.interfaces.JSONObjectRequestListener;
 import com.example.brunovsiq.mapchat.R;
+import com.example.brunovsiq.mapchat.encryption.KeyService;
 import com.example.brunovsiq.mapchat.models.Partner;
 import com.example.brunovsiq.mapchat.models.User;
 import com.example.brunovsiq.mapchat.utils.OnSwipeTouchListener;
@@ -52,12 +65,22 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
+import java.security.interfaces.RSAPublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class MultiPaneActivity extends AppCompatActivity implements OnMapReadyCallback {
+import static android.nfc.NdefRecord.createMime;
+
+public class MultiPaneActivity extends AppCompatActivity implements OnMapReadyCallback, NfcAdapter.CreateNdefMessageCallback {
 
 //    LocationManager locationManager;
 //    LocationListener locationListener;
@@ -73,7 +96,13 @@ public class MultiPaneActivity extends AppCompatActivity implements OnMapReadyCa
     private boolean isMarkersAdded = false;
     private EditText editUsername;
     private Button saveButton;
-//    private String username;
+    private boolean isRegistered = false;
+
+    private KeyService keyService;
+    private String username;
+    private boolean isBound = false;
+    private KeyPair userKeyPair;
+    private NfcAdapter nfcAdapter;
 
     @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
@@ -82,9 +111,28 @@ public class MultiPaneActivity extends AppCompatActivity implements OnMapReadyCa
         setContentView(R.layout.activity_multipane);
 
         configureByScreenSize(); //single pane for small screens
+        doBindService();
+
+
+        /* START NFC Initialization */
+
+        // Check for available NFC Adapter
+        nfcAdapter = NfcAdapter.getDefaultAdapter(this);
+        if (nfcAdapter == null) {
+            Toast.makeText(this, "NFC is not available", Toast.LENGTH_LONG).show();
+            //finish();
+            //return;
+        } else {
+            // Register callback
+            nfcAdapter.setNdefPushMessageCallback(this, this);
+        }
+        /*END NFC Initialization*/
 
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
-        User.getInstance().setUsername(sharedPref.getString("username", ""));
+        if (sharedPref.getString("username", "") != "") {
+            User.getInstance().setUsername(sharedPref.getString("username", ""));
+            username = User.getInstance().getUsername();
+        }
 
         editUsername = findViewById(R.id.username_edit);
         saveButton = findViewById(R.id.save_button);
@@ -141,6 +189,44 @@ public class MultiPaneActivity extends AppCompatActivity implements OnMapReadyCa
 
     }
 
+    private ServiceConnection mConnection = new ServiceConnection() {
+        @TargetApi(Build.VERSION_CODES.M)
+        @RequiresApi(api = Build.VERSION_CODES.M)
+        public void onServiceConnected(ComponentName className, IBinder service) {
+
+            // This is called when the connection with the service has
+            // been established, giving us the service object we can use
+            // to interact with the service.  Because we have bound to a
+            // explicit service that we know is running in our own
+            // process, we can cast its IBinder to a concrete class and
+            // directly access it.
+            keyService = ((KeyService.KeyBinder)service).getService();
+            userKeyPair = keyService.getMyKeyPair();
+
+        }
+
+        public void onServiceDisconnected(ComponentName className) {
+            // This is called when the connection with the service has
+            // been unexpectedly disconnected -- that is, its process
+            // crashed. Because it is running in our same process, we
+            // should never see this happen.
+            keyService = null;
+
+        }
+    };
+
+    void doBindService() {
+        // Establish a connection with the service.  We use an explicit
+        // class name because we want a specific service implementation
+        // that we know will be running in our own process (and thus
+        // won't be supporting component replacement by other
+        // applications).
+        bindService(new Intent(this, KeyService.class),
+                mConnection,
+                Context.BIND_AUTO_CREATE);
+        isBound = true;
+    }
+
     View.OnClickListener saveClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
@@ -149,6 +235,7 @@ public class MultiPaneActivity extends AppCompatActivity implements OnMapReadyCa
             SharedPreferences.Editor editor = sharedPref.edit();
             editor.putString("username", editUsername.getText().toString());
             User.getInstance().setUsername(editUsername.getText().toString());
+            username = editUsername.getText().toString();
             editor.commit();
 
             postUser();
@@ -156,7 +243,7 @@ public class MultiPaneActivity extends AppCompatActivity implements OnMapReadyCa
     };
 
     private void postUser() {
-        if (User.getInstance().getUsername().length() > 0) {
+        if (User.getInstance().getUsername() != null) {
             AndroidNetworking.post("https://kamorris.com/lab/register_location.php")
                     .addBodyParameter("user", User.getInstance().getUsername())
                     .addBodyParameter("latitude", String.valueOf(User.getInstance().getLatitude()))
@@ -175,9 +262,15 @@ public class MultiPaneActivity extends AppCompatActivity implements OnMapReadyCa
                             // handle error
                             Log.d("ERROR", "");
                             if (error.getMessage().contains("OK")) {
-                                Toast.makeText(MultiPaneActivity.this, "Username successfully registered/updated!", Toast.LENGTH_LONG).show();
+                                if (!isRegistered) {
+                                    isRegistered = true;
+                                    Toast.makeText(MultiPaneActivity.this, "Username successfully registered/updated!", Toast.LENGTH_LONG).show();
+                                }
+
                             } else {
-                                Toast.makeText(MultiPaneActivity.this, "Error registering username", Toast.LENGTH_LONG).show();
+                                if (!isRegistered) {
+                                    Toast.makeText(MultiPaneActivity.this, "Error registering username", Toast.LENGTH_LONG).show();
+                                }
                             }
 
                             //OK is saved
@@ -211,10 +304,53 @@ public class MultiPaneActivity extends AppCompatActivity implements OnMapReadyCa
     protected void onResume() {
         super.onResume();
 
+        if (NfcAdapter.ACTION_NDEF_DISCOVERED.equals(getIntent().getAction())) {
+            processIntent(getIntent());
+        }
+
         if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             requestLocationUpdates();
         } else {
             requestPermissions(new String[] {Manifest.permission.ACCESS_FINE_LOCATION}, PERMISSION_CHECK);
+        }
+
+    }
+
+    @Override
+    public void onNewIntent(Intent intent) {
+        // onResume gets called after this to handle the intent
+        setIntent(intent);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        doUnbindService();
+    }
+
+    void doUnbindService() {
+        if (isBound) {
+            // Detach our existing connection.
+            unbindService(mConnection);
+            isBound = false;
+        }
+    }
+
+    void processIntent(Intent intent) {
+        String userdata = new String(((NdefMessage)intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES)[0])
+                .getRecords()[0]
+                .getPayload());
+        JSONObject jsonObject = null;
+        try {
+            jsonObject = new JSONObject(userdata);
+            String partnerKey = jsonObject.getString("key");
+            partnerKey = partnerKey.replace("-----BEGIN PUBLIC KEY-----", "");
+            partnerKey = partnerKey.replace("\n-----END PUBLIC KEY-----", "");
+            keyService.storePublicKey(jsonObject.getString("user"), partnerKey, MultiPaneActivity.this);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
         }
 
     }
@@ -283,6 +419,7 @@ public class MultiPaneActivity extends AppCompatActivity implements OnMapReadyCa
 
                         // Assign adapter to ListView
                         UserListFragment.usernameListView.setAdapter(adapter);
+                        UserListFragment.usernameListView.setOnItemClickListener(onItemClickListener);
 
                     }
 
@@ -294,6 +431,31 @@ public class MultiPaneActivity extends AppCompatActivity implements OnMapReadyCa
                     }
                 });
     }
+
+    AdapterView.OnItemClickListener onItemClickListener = new AdapterView.OnItemClickListener() {
+        @TargetApi(Build.VERSION_CODES.O)
+        @RequiresApi(api = Build.VERSION_CODES.O)
+        @Override
+        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+            String partnerName = usernameList.get(position);
+            String publicKey = null;
+
+            publicKey = keyService.getPublicKey(partnerName, MultiPaneActivity.this);
+
+
+            if (publicKey != null) {
+                if (User.getInstance().getUsername() != null) {
+                    //go to chat
+                } else {
+                    Toast.makeText(MultiPaneActivity.this, "First you need to register an username!", Toast.LENGTH_LONG).show();
+                }
+
+            } else {
+                Toast.makeText(MultiPaneActivity.this, "First you need to exchange keys via NFC!", Toast.LENGTH_LONG).show();
+            }
+
+        }
+    };
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
@@ -392,4 +554,42 @@ public class MultiPaneActivity extends AppCompatActivity implements OnMapReadyCa
         }
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    @Override
+    public NdefMessage createNdefMessage(NfcEvent event) {
+
+        X509EncodedKeySpec spec = null;
+        String keyString = null;
+        try {
+            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+            spec = keyFactory.getKeySpec(userKeyPair.getPublic(), X509EncodedKeySpec.class);
+            keyString = Base64.encodeToString(spec.getEncoded(), Base64.DEFAULT);
+
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (InvalidKeySpecException e) {
+            e.printStackTrace();
+        }
+
+        keyString = String.format("-----BEGIN PUBLIC KEY-----%s-----END PUBLIC KEY-----", keyString);
+
+
+        JSONObject keyJsonObject = new JSONObject();
+        try {
+            keyJsonObject.put("user", username);
+            keyJsonObject.put("key", keyString);
+        } catch (JSONException e) {
+
+            e.printStackTrace();
+        }
+
+        String PEMRecord = keyJsonObject.toString();
+//        NdefMessage n = new NdefMessage(new NdefRecord[] { NdefRecord.createTextRecord(null,PEMRecord), NdefRecord.createApplicationRecord(getPackageName())});
+        NdefMessage n = new NdefMessage(
+                new NdefRecord[] { createMime("application/vnd.com.example.android.beam", PEMRecord.getBytes())
+
+                });
+
+        return n;
+    }
 }

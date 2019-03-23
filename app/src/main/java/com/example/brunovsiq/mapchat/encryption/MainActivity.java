@@ -197,7 +197,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Create
             String partnerKey = jsonObject.getString("key");
             partnerKey = partnerKey.replace("-----BEGIN PUBLIC KEY-----", "");
             partnerKey = partnerKey.replace("\n-----END PUBLIC KEY-----", "");
-            keyService.storePublicKey(jsonObject.getString("user"), partnerKey);
+            keyService.storePublicKey(jsonObject.getString("user"), partnerKey, MainActivity.this);
         } catch (JSONException e) {
             e.printStackTrace();
         } catch (KeyStoreException e) {

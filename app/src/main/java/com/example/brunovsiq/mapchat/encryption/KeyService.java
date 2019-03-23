@@ -2,6 +2,7 @@ package com.example.brunovsiq.mapchat.encryption;
 
 import android.annotation.TargetApi;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Binder;
@@ -12,6 +13,9 @@ import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
 import android.support.annotation.RequiresApi;
 import android.util.Log;
+
+import com.example.brunovsiq.mapchat.map.MultiPaneActivity;
+
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -64,7 +68,7 @@ public class KeyService extends Service {
     }
 
     public class KeyBinder extends Binder {
-        KeyService getService() {
+        public KeyService getService() {
             return KeyService.this;
         }
     }
@@ -145,20 +149,23 @@ public class KeyService extends Service {
         return  keyPair;
     }
 
-    public void storePublicKey (String partnerName, String publicKeyString) throws KeyStoreException {
+    public void storePublicKey (String partnerName, String publicKeyString, Context context) throws KeyStoreException {
         /* Store a key for a provided partner name */
-        try{
-            byte[] byteKey = android.util.Base64.decode(publicKeyString, android.util.Base64.DEFAULT);
-            X509EncodedKeySpec X509publicKey = new X509EncodedKeySpec(byteKey);
-            KeyFactory kf = KeyFactory.getInstance("RSA");
-
-            PublicKey publicKey = kf.generatePublic(X509publicKey);
-            keyStore.setKeyEntry(partnerName, publicKey, null, null);
-        }
-        catch(Exception e){
-            e.printStackTrace();
-        }
-
+//        try{
+//            byte[] byteKey = android.util.Base64.decode(publicKeyString, android.util.Base64.DEFAULT);
+//            X509EncodedKeySpec X509publicKey = new X509EncodedKeySpec(byteKey);
+//            KeyFactory kf = KeyFactory.getInstance("RSA");
+//
+//            PublicKey publicKey = kf.generatePublic(X509publicKey);
+//            keyStore.setKeyEntry(partnerName, publicKey, null, null);
+//        }
+//        catch(Exception e){
+//            e.printStackTrace();
+//        }
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(context);
+        SharedPreferences.Editor editor = sharedPref.edit();
+        editor.putString(partnerName, publicKeyString);
+        editor.commit();
     }
 
     @RequiresApi(api = Build.VERSION_CODES.M)
@@ -188,15 +195,16 @@ public class KeyService extends Service {
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
-    public RSAPublicKey getPublicKey(String partnerName) throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException {
+    public String getPublicKey(String partnerName, Context context)  {
     /*
      Returns the public key associated with the
      provided partner name
      */
+    SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
 
-        RSAPublicKey rsaPublicKey;
-        rsaPublicKey = (RSAPublicKey)keyStore.getKey(partnerName, null);
-        return rsaPublicKey;
+//    RSAPublicKey rsaPublicKey;
+//        rsaPublicKey = (RSAPublicKey)keyStore.getKey(partnerName, null);
+     return sharedPref.getString(partnerName, null);
 
 
     }
