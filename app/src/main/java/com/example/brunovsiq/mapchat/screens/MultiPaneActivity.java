@@ -96,6 +96,7 @@ public class MultiPaneActivity extends AppCompatActivity implements OnMapReadyCa
     private KeyService keyService;
     private String username;
     private boolean isBound = false;
+    private boolean tokenRegistered = false;
     private KeyPair userKeyPair;
     private NfcAdapter nfcAdapter;
 
@@ -278,34 +279,37 @@ public class MultiPaneActivity extends AppCompatActivity implements OnMapReadyCa
     }
 
     private void registerToken() {
-        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-        String token = sharedPref.getString("fcm_token", null);
-        AndroidNetworking.post("https://kamorris.com/lab/fcm_register.php")
-                .addBodyParameter("user", User.getInstance().getUsername())
-                .addBodyParameter("token", token)
-                .setPriority(Priority.HIGH)
-                .build()
-                .getAsJSONObject(new JSONObjectRequestListener() {
-                    @Override
-                    public void onResponse(JSONObject response) {
-                        // do anything with response
-                        Log.d("RESPONSE", "");
-                    }
-
-                    @Override
-                    public void onError(ANError error) {
-                        // handle error
-                        Log.d("ERROR", "");
-                        if (error.getMessage().contains("OK")) {
-
-
-                        } else {
-
+//        if (!tokenRegistered) {
+//            tokenRegistered = true;
+            SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+            String token = sharedPref.getString("fcm_token", null);
+            AndroidNetworking.post("https://kamorris.com/lab/fcm_register.php")
+                    .addBodyParameter("user", User.getInstance().getUsername())
+                    .addBodyParameter("token", token)
+                    .setPriority(Priority.HIGH)
+                    .build()
+                    .getAsJSONObject(new JSONObjectRequestListener() {
+                        @Override
+                        public void onResponse(JSONObject response) {
+                            // do anything with response
+                            Log.d("RESPONSE", "");
                         }
 
-                        //OK is saved
-                    }
-                });
+                        @Override
+                        public void onError(ANError error) {
+                            // handle error
+                            Log.d("ERROR", "");
+                            if (error.getMessage().contains("OK")) {
+
+
+                            } else {
+
+                            }
+
+                            //OK is saved
+                        }
+                    });
+        //}
     }
 
     private TimerTask timerTask = new TimerTask() {
@@ -477,6 +481,7 @@ public class MultiPaneActivity extends AppCompatActivity implements OnMapReadyCa
                     //go to chat
                     Intent intent = new Intent(MultiPaneActivity.this, ChatActivity.class);
                     intent.putExtra("partnerName", partnerName);
+                    intent.putExtra("partnerKey", publicKey);
                     startActivity(intent);
                 } else {
                     Toast.makeText(MultiPaneActivity.this, "First you need to register an username!", Toast.LENGTH_LONG).show();
