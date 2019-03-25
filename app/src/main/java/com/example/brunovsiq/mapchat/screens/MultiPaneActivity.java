@@ -260,6 +260,7 @@ public class MultiPaneActivity extends AppCompatActivity implements OnMapReadyCa
                                 if (!isRegistered) {
                                     isRegistered = true;
                                     Toast.makeText(MultiPaneActivity.this, "Username successfully registered/updated!", Toast.LENGTH_LONG).show();
+
                                 }
 
                             } else {
@@ -268,10 +269,43 @@ public class MultiPaneActivity extends AppCompatActivity implements OnMapReadyCa
                                 }
                             }
 
+                            registerToken();
+
                             //OK is saved
                         }
                     });
         }
+    }
+
+    private void registerToken() {
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        String token = sharedPref.getString("fcm_token", null);
+        AndroidNetworking.post("https://kamorris.com/lab/fcm_register.php")
+                .addBodyParameter("user", User.getInstance().getUsername())
+                .addBodyParameter("token", token)
+                .setPriority(Priority.HIGH)
+                .build()
+                .getAsJSONObject(new JSONObjectRequestListener() {
+                    @Override
+                    public void onResponse(JSONObject response) {
+                        // do anything with response
+                        Log.d("RESPONSE", "");
+                    }
+
+                    @Override
+                    public void onError(ANError error) {
+                        // handle error
+                        Log.d("ERROR", "");
+                        if (error.getMessage().contains("OK")) {
+
+
+                        } else {
+
+                        }
+
+                        //OK is saved
+                    }
+                });
     }
 
     private TimerTask timerTask = new TimerTask() {

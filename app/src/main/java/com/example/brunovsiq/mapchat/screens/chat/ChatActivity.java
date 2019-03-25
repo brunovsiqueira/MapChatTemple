@@ -50,6 +50,8 @@ public class ChatActivity extends AppCompatActivity {
         messageAdapter = new MessageAdapter(this, messageList, partnerName);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(messageAdapter);
+        recyclerView.scrollToPosition(messageList.size() - 1);
+
 
         sendButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -59,10 +61,12 @@ public class ChatActivity extends AppCompatActivity {
                     Message message = new Message(inputText.getText().toString(), User.getInstance().getUsername(), calendar);
                     messageList.add(message);
                     messageAdapter.notifyDataSetChanged();
-                    inputText.setText("git sta");
+                    inputText.setText("");
                 }
             }
         });
+
+
 
 
 //        messageInput = findViewById(R.id.input);
