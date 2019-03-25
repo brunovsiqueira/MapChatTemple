@@ -1,4 +1,4 @@
-package com.example.brunovsiq.mapchat.map;
+package com.example.brunovsiq.mapchat.screens;
 
 import android.os.Bundle;
 import android.support.annotation.NonNull;

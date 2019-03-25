@@ -36,7 +36,7 @@
             android:enabled="true"
             android:exported="true" />
 
-        <activity android:name=".map.MultiPaneActivity"
+        <activity android:name=".screens.MultiPaneActivity"
             android:launchMode="singleTask">
 
             <intent-filter>
@@ -51,6 +51,8 @@
             </intent-filter>
 
         </activity>
+
+        <activity android:name=".screens.chat.ChatActivity"/>
 
         <service android:name=".services.MyFirebaseMessagingService">
             <intent-filter>

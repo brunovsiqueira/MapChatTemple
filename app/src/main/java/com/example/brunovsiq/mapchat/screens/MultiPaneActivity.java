@@ -1,4 +1,4 @@
-package com.example.brunovsiq.mapchat.map;
+package com.example.brunovsiq.mapchat.screens;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
@@ -9,10 +9,7 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.content.res.Configuration;
 import android.location.Location;
-import android.location.LocationListener;
-import android.location.LocationManager;
 import android.nfc.NdefMessage;
 import android.nfc.NdefRecord;
 import android.nfc.NfcAdapter;
@@ -45,6 +42,7 @@ import com.example.brunovsiq.mapchat.R;
 import com.example.brunovsiq.mapchat.encryption.KeyService;
 import com.example.brunovsiq.mapchat.models.Partner;
 import com.example.brunovsiq.mapchat.models.User;
+import com.example.brunovsiq.mapchat.screens.chat.ChatActivity;
 import com.example.brunovsiq.mapchat.utils.OnSwipeTouchListener;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -57,7 +55,6 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnSuccessListener;
 
@@ -69,8 +66,6 @@ import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
-import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
@@ -446,6 +441,9 @@ public class MultiPaneActivity extends AppCompatActivity implements OnMapReadyCa
             if (publicKey != null) {
                 if (User.getInstance().getUsername() != null) {
                     //go to chat
+                    Intent intent = new Intent(MultiPaneActivity.this, ChatActivity.class);
+                    intent.putExtra("partnerName", partnerName);
+                    startActivity(intent);
                 } else {
                     Toast.makeText(MultiPaneActivity.this, "First you need to register an username!", Toast.LENGTH_LONG).show();
                 }
